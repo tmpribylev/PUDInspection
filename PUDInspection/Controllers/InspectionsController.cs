@@ -552,7 +552,118 @@ namespace PUDInspection.Controllers
             return RedirectToAction("Index", "Validations", new { id = id });
         }
 
-        public async void AllocatePUDsPerInspectors(int inspId)
+        [HttpPost]
+        public async Task<IActionResult> Open(int id, int spaceId)
+        {
+            var inspection = await _context.Inspections
+                .FirstOrDefaultAsync(m => m.Id == id);
+
+            if (inspection == null)
+            {
+                return NotFound();
+            }
+
+            inspection.Started = true;
+            _context.Update(inspection);
+
+            await _context.SaveChangesAsync();
+
+            var registry = new Registry();
+            registry.Schedule(() => NextIteration(id)).ToRunNow();
+            JobManager.Initialize(registry);
+
+            return RedirectToAction("Index", new { id = spaceId });
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Iteration(int id, int spaceId)
+        {
+            var inspection = await _context.Inspections
+                .FirstOrDefaultAsync(m => m.Id == id);
+
+            if (inspection == null)
+            {
+                return NotFound();
+            }
+
+            inspection.Started = false;
+            _context.Update(inspection);
+
+            await _context.SaveChangesAsync();
+
+            var registry = new Registry();
+            registry.Schedule(() => NextIteration(id)).ToRunNow();
+            JobManager.Initialize(registry);
+
+            return RedirectToAction("Index", new { id = spaceId });
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Close(int id, int spaceId)
+        {
+            var inspection = await _context.Inspections
+                .FirstOrDefaultAsync(m => m.Id == id);
+
+            if (inspection == null)
+            {
+                return NotFound();
+            }
+
+            inspection.Closed = true;
+            _context.Update(inspection);
+
+            await _context.SaveChangesAsync();
+
+            return RedirectToAction("Index", new { id = spaceId });
+        }
+
+        private async void NextIteration(int inspId)
+        {
+            string projectPath = AppDomain.CurrentDomain.BaseDirectory.Split(new String[] { @"bin\" }, StringSplitOptions.None)[0];
+            IConfigurationRoot configuration = new ConfigurationBuilder()
+                .SetBasePath(projectPath)
+                .AddJsonFile("appsettings.json")
+                .Build();
+            string connectionString = configuration.GetConnectionString("DefaultConnection");
+
+            var contextOptions = new DbContextOptionsBuilder<ApplicationDbContext>()
+                                                            .UseSqlServer(connectionString)
+                                                            .Options;
+
+            ApplicationDbContext context = new ApplicationDbContext(contextOptions);
+
+            var insp = await context.Inspections
+                .FirstOrDefaultAsync(m => m.Id == inspId);
+
+            try
+            {
+                await AllocatePUDsPerInspectors(inspId);
+
+                if (insp.CurrentIteration > 0)
+                {
+                    insp.Started = true;
+                }
+
+                insp.CurrentIteration++;
+                context.Update(insp);
+            }
+            catch
+            {
+                if (insp.CurrentIteration == 0)
+                {
+                    insp.Started = false;
+                }
+                else
+                {
+                    insp.Started = true;
+                }
+                    context.Update(insp);
+            }
+
+            await context.SaveChangesAsync();
+        }
+
+        private async Task<string> AllocatePUDsPerInspectors(int inspId)
         {
             string projectPath = AppDomain.CurrentDomain.BaseDirectory.Split(new String[] { @"bin\" }, StringSplitOptions.None)[0];
             IConfigurationRoot configuration = new ConfigurationBuilder()
@@ -574,20 +685,17 @@ namespace PUDInspection.Controllers
 
             if (insp.PUDList.Count != 0)
             {
+                Inspection inspection = null;
                 // Выбираем нужную проверку
                 var all_insp = await context.Inspections.Include(i => i.UserList)
                                                          .Include(i => i.PUDAllocationList)
                                                          .Include(i => i.CriteriaList)
                                                          .ToListAsync();
-                //var all_crit = await context.CheckVsCriterias.ToListAsync();
-                //var all_puds = await context.PUDs.ToListAsync();
-                //var all_users = await context.Users.ToListAsync();
-                //var all_allocation = await context.PUDAllocations.ToListAsync();
                 var all_users = await context.Users.Include(i => i.CheckResults).ToListAsync();
                 var all_results = await context.CheckResults.Include(i => i.InspectionCriteria).ToListAsync();
                 var all_crit = await context.CheckVsCriterias.Include(i => i.Check).ToListAsync();
 
-                var inspection = all_insp.Find(i => i.Id == inspId);
+                inspection = all_insp.Find(i => i.Id == inspId);
                 inspection.PUDList = insp.PUDList;
 
                 // Создаем список для сохранения проверенных ПУД
@@ -685,7 +793,7 @@ namespace PUDInspection.Controllers
                 await context.SaveChangesAsync();
             }
 
-            return;
+            return "";
         }
     }
 }

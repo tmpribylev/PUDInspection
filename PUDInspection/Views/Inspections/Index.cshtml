@@ -31,9 +31,13 @@ else
                 }
                 else
                 {
-                    @if (item.StartDate <= DateTime.Today)
+                    @if (item.Started && item.CurrentIteration > 0)
                     {
-                        <a class="card-title">Открыта</a>
+                        <a class="card-title">Активна</a>
+                    }
+                    else if (item.Started && item.CurrentIteration == 0 || !item.Started && item.CurrentIteration > 0)
+                    {
+                        <a class="card-title">Ведется распределение ПУД, скоро откроется</a>
                     }
                     else
                     {
@@ -53,14 +57,33 @@ else
                     <a class="card-title">Объявлена охота</a>
                 </div>
             }
-            <div class="card-footer">
-                <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-primary">Редактировать</a>
-                @if (item.StartDate > DateTime.Today)
-                {
-                    <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-primary">Удалить</a>
-                }
-                <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-primary">Обзор</a>
-            </div>
+        <div class="card-footer">
+            <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-primary">Редактировать</a>
+            <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-primary">Обзор</a>
+            @if (item.CurrentIteration >= item.IterationNumber && !item.Closed)
+            {
+
+                <form asp-action="Close" asp-route-id="@item.Id" asp-route-spaceId="@item.InspectionSpace.Id">
+                    <input type="hidden" asp-for="@item.Id" />
+                    <input type="submit" value="Закончить проверку" class="btn btn-primary" />
+                </form>
+            }
+            else if (!item.Started && item.CurrentIteration == 0)
+            {
+                <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-primary">Удалить</a>
+                <form asp-action="Open" asp-route-id="@item.Id" asp-route-spaceId="@item.InspectionSpace.Id">
+                    <input type="hidden" asp-for="@item.Id" />
+                    <input type="submit" value="Запустить проверку" class="btn btn-primary" />
+                </form>
+            }
+            @if (item.Started && !item.Closed && !(item.CurrentIteration == item.IterationNumber || item.CurrentIteration == 0))
+            {
+                <form asp-action="Iteration" asp-route-id="@item.Id" asp-route-spaceId="@item.InspectionSpace.Id">
+                    <input type="hidden" asp-for="@item.Id" />
+                    <input type="submit" value="Запустить следующий этап проверки" class="btn btn-primary" />
+                </form>
+            }
+        </div>
         </div>
     }
 }
