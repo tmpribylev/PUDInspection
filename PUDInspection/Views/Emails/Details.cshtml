@@ -1,0 +1,42 @@
+﻿@model PUDInspection.Models.EmailText
+
+@{
+    ViewData["Title"] = "Details";
+}
+
+<h1>Details</h1>
+
+<div>
+    <h4>EmailText</h4>
+    <hr />
+    <dl class="row">
+        <dt class = "col-sm-2">
+            @Html.DisplayNameFor(model => model.GoodPUDText)
+        </dt>
+        <dd class = "col-sm-10">
+            @Html.DisplayFor(model => model.GoodPUDText)
+        </dd>
+        <dt class = "col-sm-2">
+            @Html.DisplayNameFor(model => model.StartText)
+        </dt>
+        <dd class = "col-sm-10">
+            @Html.DisplayFor(model => model.StartText)
+        </dd>
+        <dt class = "col-sm-2">
+            @Html.DisplayNameFor(model => model.EndText)
+        </dt>
+        <dd class = "col-sm-10">
+            @Html.DisplayFor(model => model.EndText)
+        </dd>
+        <dt class = "col-sm-2">
+            @Html.DisplayNameFor(model => model.DescriptionText)
+        </dt>
+        <dd class = "col-sm-10">
+            @Html.DisplayFor(model => model.DescriptionText)
+        </dd>
+    </dl>
+</div>
+<div>
+    <a asp-action="Edit" asp-route-id="@Model.Id">Edit</a> |
+    <a asp-action="Index">Back to List</a>
+</div>

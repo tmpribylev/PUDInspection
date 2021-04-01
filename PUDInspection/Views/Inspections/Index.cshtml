@@ -1,0 +1,82 @@
+﻿@model IEnumerable<PUDInspection.Models.Inspection>
+
+@{
+    ViewData["Title"] = "Список проверок";
+    int space_id = Convert.ToInt32(TempData["InspSpaceID"]);
+}
+@if (Model.Count() == 0)
+{
+    <h1>Список проверок</h1>
+}
+else
+{
+    <h1>Список проверок из @Model.First().InspectionSpace.Name</h1>
+}
+<a class="btn btn-primary mb-3" style="width:auto"  asp-action="GoToInspectionSpace" asp-route-id="@space_id">Назад к пространству проверок</a>
+
+@if (Model.Any())
+{
+    <a class="btn btn-primary mb-3" style="width:auto" asp-action="Create" asp-route-id="@space_id">Создать проверку</a>
+
+    @foreach (var item in Model)
+    {
+        <div class="card mb-3">
+            <div class="card-header">
+                Название : @item.Name
+            </div>
+            <div class="card-body">
+                @if (item.Closed)
+                {
+                    <a class="card-title">Проверка окончена</a>
+                }
+                else
+                {
+                    @if (item.StartDate <= DateTime.Today)
+                    {
+                        <a class="card-title">Открыта</a>
+                    }
+                    else
+                    {
+                        <a class="card-title">Ожидает начала</a>
+                    }
+                }
+            </div>
+            <div class="card-body">
+                <a class="card-title">Даты проведения: @item.StartDate - @item.EndDate</a>
+            </div>
+            <div class="card-body">
+                <a class="card-title">Этап: @item.CurrentIteration / @item.IterationNumber</a>
+            </div>
+            @if (item.Hunt)
+            {
+                <div class="card-body">
+                    <a class="card-title">Объявлена охота</a>
+                </div>
+            }
+            <div class="card-footer">
+                <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-primary">Редактировать</a>
+                @if (item.StartDate > DateTime.Today)
+                {
+                    <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-primary">Удалить</a>
+                }
+                <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-primary">Обзор</a>
+            </div>
+        </div>
+    }
+}
+else
+{
+    <div class="card">
+        <div class="card-header">
+            Не создано ни одной проверки
+        </div>
+        <div class="card-body">
+            <h5 class="card-title">
+                Для создания пространства нажмите на кнопку
+            </h5>
+            <a class="btn btn-primary" style="width:auto" asp-action="Create" asp-route-id="@space_id">
+                Создать проверку
+            </a>
+        </div>
+    </div>
+}

@@ -1,0 +1,82 @@
+﻿@model PUDInspection.Models.InspectionSpace
+
+@{
+    ViewData["Title"] = Model.Name;
+}
+
+<h1>Обзор пространства проверок</h1>
+
+<div class="card mb-3">
+    <div class="card-header">
+        Название : @Model.Name
+    </div>
+    <div class="card-body">
+        <h5 class="card-title">@Model.Name</h5>
+    </div>
+    <div class="card-body">
+        @if (Model.Closed)
+        {
+            <a class="card-title">Заблокировано</a>
+        }
+        else
+        {
+            <a class="card-title">Открыто</a>
+        }
+    </div>
+    <div class="card-footer">
+        @if (User.IsInRole("admin"))
+        {
+            <a asp-action="EditInspectionSpace" asp-route-id="@Model.Id" class="btn btn-primary">Редактировать</a>
+            @if (!Model.Closed)
+            {
+                <a asp-action="Delete" asp-route-id="@Model.Id" class="btn btn-primary">Заблокировать</a>
+            }
+        }
+        <a asp-action="Index" class="btn btn-primary">Назад</a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h3>Прикрепленные модераторы</h3>
+    </div>
+    <div class="card-body">
+        @if (Model.UserList != null && Model.UserList.Any())
+        {
+            foreach (var user in Model.UserList)
+            {
+                <h5 class="card-title">@user.RealName</h5>
+            }
+        }
+        else
+        {
+            <h5 class="card-title">К данному пространству не прикреплен ни один модератор</h5>
+        }
+    </div>
+    <div class="card-footer">
+        <a asp-action="CreateUser" asp-controller="Administration" class="btn btn-primary" style="width:auto">Создать нового пользователя</a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h3>Список проверок</h3>
+    </div>
+    <div class="card-body">
+        @if (Model.InspectionList != null && Model.InspectionList.Any())
+        {
+            foreach (var inspection in Model.InspectionList)
+            {
+                <h5 class="card-title">@inspection.Name</h5>
+            }
+        }
+        else
+        {
+            <h5 class="card-title">В данном пространстве нет проверок</h5>
+        }
+    </div>
+    <div class="card-footer">
+        <a asp-action="Create" asp-controller="Inspections" asp-route-id="@Model.Id" class="btn btn-primary" style="width:auto">Создать проверку</a>
+        <a asp-action="Index" asp-controller="Inspections" asp-route-id="@Model.Id" class="btn btn-primary" style="width:auto">Полный обзор проверок</a>
+    </div>
+</div>

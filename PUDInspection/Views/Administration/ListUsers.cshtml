@@ -1,0 +1,75 @@
+﻿@model IEnumerable<ApplicationUser>
+
+@{
+    ViewData["Title"] = "Пользователи";
+}
+
+<h1>@ViewData["Title"]</h1>
+
+@if (Model.Any())
+{
+    <div>
+        <a class="btn btn-primary mb-3" style="width:auto" asp-action="CreateUser"
+           asp-controller="Administration">Создать нового пользователя</a>
+    </div>
+    @if (User.IsInRole("creator"))
+    {
+        <div>
+            <a asp-action="ListRoles" asp-controller="Administration">Перейти к списку ролей</a>
+        </div>
+    }
+
+    foreach (var user in Model)
+    {
+        <div class="card mb-3">
+            <div class="card-header">
+                User Id : @user.Id
+            </div>
+            <div class="card-body">
+                <h5 class="card-title">@user.RealName</h5>
+            </div>
+            <div class="card-body">
+                <a class="card-title">@user.Email</a>
+            </div>
+            <div class="card-body">
+                <a class="card-title">@user.VKLink</a>
+            </div>
+            <div class="card-footer">
+                <a asp-action="EditUser" asp-controller="Administration" asp-route-id="@user.Id" class="btn btn-primary">
+                    Редактировать
+                </a>
+                <form method="post" asp-action="BlockOrUnblockUser" asp-route-id="@user.Id">
+                    @if (user.Blocked)
+                    {
+                        <button type="submit" class="btn btn-danger">Разблокировать</button>
+                    }
+                    else
+                    {
+                        <button type="submit" class="btn btn-danger">Заблокировать</button>
+                    }
+                </form>
+            </div>
+        </div>
+    }
+}
+else
+{
+    <div class="card">
+        <div class="card-header">
+            Не создано ни одного пользователя
+        </div>
+        <div class="card-body">
+            <h5 class="card-title">
+                Для создания пользователя нажмите на кнопку
+            </h5>
+            <a class="btn btn-primary" style="width:auto"
+               asp-controller="Administration" asp-action="CreateUser">
+                Создать пользователя
+            </a>
+        </div>
+    </div>
+}
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

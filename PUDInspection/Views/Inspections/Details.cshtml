@@ -1,0 +1,125 @@
+﻿@model PUDInspection.ViewModels.DetailsInspectionViewModel
+
+@{
+    ViewData["Title"] = Model.InspectionName;
+}
+
+<h1>Обзор проверки</h1>
+
+<div class="card mb-3">
+    <div class="card-header">
+        Название : @Model.InspectionName
+    </div>
+    <div class="card-body">
+        <h5 class="card-title">@Model.InspectionName</h5>
+    </div>
+    <div class="card-body">
+        @if (Model.Closed)
+        {
+            <a class="card-title">Проверка окончена</a>
+        }
+        else
+        {
+            @if (Model.StartDate <= DateTime.Today)
+            {
+                <a class="card-title">Открыта</a>
+            }
+            else
+            {
+                <a class="card-title">Ожидает начала</a>
+            }
+        }
+    </div>
+    <div class="card-body">
+        <a class="card-title">Даты проведения: @Model.StartDate - @Model.EndDate</a>
+    </div>
+    <div class="card-body">
+        <a class="card-title">Этап: @Model.CurrentIteration / @Model.IterationNumber</a>
+    </div>
+    <div class="card-body">
+        <a class="card-title">Проверено @Model.CurrentCheckPUDCount / @Model.PUDCount ПУДов</a>
+    </div>
+    @if (Model.Hunt)
+    {
+        <div class="card-body">
+            <a class="card-title">Объявлена охота</a>
+        </div>
+    }
+    <div class="card-footer">
+        <a asp-action="Edit" asp-route-id="@Model.InspectionId" class="btn btn-primary">Редактировать</a>
+        @if (Model.StartDate > DateTime.Today)
+        {
+            <a asp-action="Delete" asp-route-id="@Model.InspectionId" class="btn btn-primary">Удалить</a>
+        }
+        <a asp-action="Index" asp-route-id="@Model.SpaceId" class="btn btn-primary">Назад</a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h3>Прикрепленные проверяющие</h3>
+    </div>
+    <div class="card-body">
+        @if (Model.Users != null && Model.Users.Any())
+        {
+            foreach (var user in Model.Users)
+            {
+                <h5 class="card-title">@user</h5>
+            }
+        }
+        else
+        {
+            <h5 class="card-title">К данной проверке не прикреплен ни один проверяющий</h5>
+        }
+    </div>
+    <div class="card-footer">
+        <a asp-action="CreateUser" asp-controller="Administration" class="btn btn-primary" style="width:auto">Создать нового пользователя</a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h3>Критерии проверки</h3>
+    </div>
+    <div class="card-body">
+        @if (Model.Criterias != null && Model.Criterias.Any())
+        {
+            foreach (var checkVsCriteria in Model.Criterias)
+            {
+                <h5 class="card-title">@checkVsCriteria.Criteria.Name</h5>
+                <a>@checkVsCriteria.Criteria.Description</a>
+            }
+        }
+        else
+        {
+            <h5 class="card-title">У данной проверки нет критериев</h5>
+        }
+    </div>
+    <div class="card-footer">
+        <a asp-action="Create" asp-controller="Criteria" class="btn btn-primary" style="width:auto">Создать новый критерий</a>
+        <a asp-action="Index" asp-controller="Criteria" class="btn btn-primary" style="width:auto">Список всех критериев</a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h3>Список перепроверок</h3>
+    </div>
+    <div class="card-body">
+        @if (Model.Validations != null && Model.Validations.Any())
+        {
+            foreach (var validation in Model.Validations)
+            {
+                <h5 class="card-title">@validation</h5>
+            }
+        }
+        else
+        {
+            <h5 class="card-title">В данной проверке нет перепроверок</h5>
+        }
+    </div>
+    <div class="card-footer">
+        <a asp-action="Create" asp-controller="Validations" asp-route-id="@Model.InspectionId" class="btn btn-primary" style="width:auto">Создать перепроверку</a>
+        <a asp-action="Index" asp-controller="Validations" asp-route-id="@Model.InspectionId" class="btn btn-primary" style="width:auto">Полный обзор перепроверок</a>
+    </div>
+</div>
