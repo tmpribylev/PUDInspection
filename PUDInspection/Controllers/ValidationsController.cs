@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using PUDInspection.Data;
 using PUDInspection.Models;
+using PUDInspection.ViewModels;
 
 namespace PUDInspection.Controllers
 {
@@ -38,7 +39,7 @@ namespace PUDInspection.Controllers
             {
                 return NotFound();
             }
-            TempData["InspSpaceID"] = id;
+            TempData["InspID"] = id;
             return View(validations);
         }
 
@@ -61,9 +62,19 @@ namespace PUDInspection.Controllers
         }
 
         // GET: Validations/Create
-        public IActionResult Create()
+        public IActionResult Create(int? id)
         {
-            return View();
+            if (id == null)
+            {
+                return NotFound();
+            }
+
+            CreateValidationViewModel model = new CreateValidationViewModel()
+            {
+                InspId = (int)id
+            };
+
+            return View(model);
         }
 
         // POST: Validations/Create
@@ -71,15 +82,26 @@ namespace PUDInspection.Controllers
         // more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Id,Name,StartDate,EndDate,IterationNumber,CurrentIteration,Hunt,Closed")] Validation validation)
+        public async Task<IActionResult> Create(CreateValidationViewModel model)
         {
             if (ModelState.IsValid)
             {
+                Validation validation = new Validation()
+                {
+                    Name = model.ValidationName,
+                    StartDate = model.StartDate,
+                    EndDate = model.EndDate,
+                    IterationNumber = model.IterationNumber,
+                    Inspection = await _context.Inspections
+                    .FirstOrDefaultAsync(m => m.Id == model.InspId)
+                };
+
                 _context.Add(validation);
                 await _context.SaveChangesAsync();
-                return RedirectToAction(nameof(Index));
+
+                return RedirectToAction("Index", new { id = model.InspId });
             }
-            return View(validation);
+            return View(model);
         }
 
         // GET: Validations/Edit/5
@@ -165,6 +187,11 @@ namespace PUDInspection.Controllers
         private bool ValidationExists(int id)
         {
             return _context.Validations.Any(e => e.Id == id);
+        }
+
+        public ActionResult GoToInspection(int? id)
+        {
+            return RedirectToAction("Details", "Inspection", new { id = id });
         }
     }
 }

@@ -1,71 +1,106 @@
 ﻿@model IEnumerable<PUDInspection.Models.Validation>
 
 @{
-    ViewData["Title"] = "Index";
+    ViewData["Title"] = "Список перепроверок";
+    int inspId = Convert.ToInt32(TempData["InspID"]);
 }
 
-<h1>Index</h1>
-
-<p>
-    <a asp-action="Create">Create New</a>
-</p>
-<table class="table">
-    <thead>
-        <tr>
-            <th>
-                @Html.DisplayNameFor(model => model.Name)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.StartDate)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.EndDate)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.IterationNumber)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.CurrentIteration)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Hunt)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Closed)
-            </th>
-            <th></th>
-        </tr>
-    </thead>
-    <tbody>
-@foreach (var item in Model) {
-        <tr>
-            <td>
-                @Html.DisplayFor(modelItem => item.Name)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.StartDate)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.EndDate)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.IterationNumber)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.CurrentIteration)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Hunt)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Closed)
-            </td>
-            <td>
-                <a asp-action="Edit" asp-route-id="@item.Id">Edit</a> |
-                <a asp-action="Details" asp-route-id="@item.Id">Details</a> |
-                <a asp-action="Delete" asp-route-id="@item.Id">Delete</a>
-            </td>
-        </tr>
+@if (Model.Count() == 0)
+{
+    <h1>Список перепроверок</h1>
 }
-    </tbody>
-</table>
+else
+{
+    <h1>Список проверок из @Model.First().Inspection.Name</h1>
+}
+<a class="btn btn-primary mb-3" style="width:auto" asp-action="GoToInspection" asp-route-id="@inspId">Назад к проверке</a>
+
+@if (Model.Any())
+{
+    <a class="btn btn-primary mb-3" style="width:auto" asp-action="Create" asp-route-id="@inspId">Создать проверку</a>
+
+    @foreach (var item in Model)
+    {
+        <div class="card mb-3">
+            <div class="card-header">
+                Название : @item.Name
+            </div>
+            <div class="card-body">
+                @if (item.Closed)
+                {
+                    <a class="card-title">Перепроверка окончена</a>
+                }
+                else
+                {
+                    @if (item.Started && item.CurrentIteration > 0)
+                    {
+                        <a class="card-title">Активна</a>
+                    }
+                    else if (item.Started && item.CurrentIteration == 0 || !item.Started && item.CurrentIteration > 0)
+                    {
+                        <a class="card-title">Ведется распределение ПУД, скоро откроется</a>
+                    }
+                    else
+                    {
+                        <a class="card-title">Ожидает начала</a>
+                    }
+                }
+            </div>
+            <div class="card-body">
+                <a class="card-title">Даты проведения: @item.StartDate - @item.EndDate</a>
+            </div>
+            <div class="card-body">
+                <a class="card-title">Этап: @item.CurrentIteration / @item.IterationNumber</a>
+            </div>
+            @if (item.Hunt)
+            {
+                <div class="card-body">
+                    <a class="card-title">Объявлена охота</a>
+                </div>
+            }
+            <div class="card-footer">
+                <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-primary">Редактировать</a>
+                <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-primary">Обзор</a>
+                @if (item.CurrentIteration >= item.IterationNumber && !item.Closed)
+                {
+
+                    <form asp-action="Close" asp-route-id="@item.Id" asp-route-spaceId="@item.Inspection.Id">
+                        <input type="hidden" asp-for="@item.Id" />
+                        <input type="submit" value="Закончить проверку" class="btn btn-primary" />
+                    </form>
+                }
+                else if (!item.Started && item.CurrentIteration == 0)
+                {
+                    <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-primary">Удалить</a>
+                    <form asp-action="Open" asp-route-id="@item.Id" asp-route-spaceId="@item.Inspection.Id">
+                        <input type="hidden" asp-for="@item.Id" />
+                        <input type="submit" value="Запустить проверку" class="btn btn-primary" />
+                    </form>
+                }
+                @if (item.Started && !item.Closed && !(item.CurrentIteration == item.IterationNumber || item.CurrentIteration == 0))
+                {
+                    <form asp-action="Iteration" asp-route-id="@item.Id" asp-route-spaceId="@item.Inspection.Id">
+                        <input type="hidden" asp-for="@item.Id" />
+                        <input type="submit" value="Запустить следующий этап проверки" class="btn btn-primary" />
+                    </form>
+                }
+            </div>
+        </div>
+    }
+}
+else
+{
+    <div class="card">
+        <div class="card-header">
+            Не создано ни одной перепроверки
+        </div>
+        <div class="card-body">
+            <h5 class="card-title">
+                Для создания перепроверки нажмите на кнопку
+            </h5>
+            <a class="btn btn-primary" style="width:auto" asp-action="Create" asp-route-id="@inspId">
+                Создать перепроверку
+            </a>
+        </div>
+    </div>
+}
