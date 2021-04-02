@@ -15,7 +15,7 @@ namespace PUDInspection.Models
         public List<Inspection> Inspections { get; set; }
         public List<Validation> Validations { get; set; }
         public List<PUDAllocation> PUDAllocations { get; set; }
-        public List<CheckResult> CheckResults { get; set; }
+        public List<CheckPUDResult> CheckPUDResults { get; set; }
         public List<InspectionSpace> InspectionSpaces { get; set; }
         public List<CheckResultEvaluation> CheckResultEvaluations { get; set; }
     }

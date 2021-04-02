@@ -5,10 +5,9 @@ using System.Threading.Tasks;
 
 namespace PUDInspection.Models
 {
-    public class Validation : Check
+    public class InspectionPUDResult : CheckPUDResult
     {
+        public List<CheckResultEvaluation> CheckResultEvaluations { get; set; }
         public Inspection Inspection { get; set; }
-        public List<ApplicationUser> UserList { get; set; }
-        public List<ValidationPUDResult> ValidationPUDResults { get; set; }
     }
 }

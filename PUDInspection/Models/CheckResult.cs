@@ -9,9 +9,6 @@ namespace PUDInspection.Models
     {
         public int Id { get; set; }
         public int Evaluation { get; set; }
-        public PUD PUD { get; set; }
-        public ApplicationUser User { get; set; }
         public CheckVsCriteria InspectionCriteria { get; set; }
-        public int Iteration { get; set; }
     }
 }

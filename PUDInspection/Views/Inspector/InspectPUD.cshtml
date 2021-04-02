@@ -10,7 +10,6 @@
 @if (Model.Any())
 {
 <form method="post" class="mt-3" enctype="multipart/form-data">
-    <input type="hidden" asp-for="@Model[0].Id" />
     <input type="hidden" asp-for="@Model[0].CurrentIteration" />
     <input type="hidden" asp-for="@Model[0].PUDId" />
     <input type="hidden" asp-for="@Model[0].UserId" />

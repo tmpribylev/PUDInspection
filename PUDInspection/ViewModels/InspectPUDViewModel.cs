@@ -9,9 +9,8 @@ namespace PUDInspection.ViewModels
 {
     public class InspectPUDViewModel
     {
-        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-        public string Id { get; set; }
         public string UserId { get; set; }
+        public int InspectionId { get; set; }
         public int CurrentIteration { get; set; }
         public int AllocationId { get; set; }
         public int PUDId { get; set; }

@@ -14,6 +14,8 @@ namespace PUDInspection.Data
         public DbSet<Validation> Validations { get; set; }
         public DbSet<CheckResult> CheckResults { get; set; }
         public DbSet<CheckResultEvaluation> CheckResultEvaluations { get; set; }
+        public DbSet<ValidationPUDResult> ValidationPUDResults { get; set; }
+        public DbSet<InspectionPUDResult> InspectionPUDResults { get; set; }
         public DbSet<CheckVsCriteria> CheckVsCriterias { get; set; }
         public DbSet<Contact> Contacts { get; set; }
         public DbSet<Criteria> Criterias { get; set; }

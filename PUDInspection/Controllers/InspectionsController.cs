@@ -62,6 +62,7 @@ namespace PUDInspection.Controllers
                                                      .Include(i => i.UserList)
                                                      .Include(i => i.Validations)
                                                      .Include(i => i.PUDList)
+                                                     .Include(i => i.InspectionPUDResults)
                                                      .ToListAsync();
             var inspection = all_insp.Find(i => i.Id == id);
 
@@ -105,9 +106,9 @@ namespace PUDInspection.Controllers
                 model.Validations.Add(valudation.Name);
             }
 
-            if (inspection.CriteriaList.Count != 0 && inspection.CriteriaList[0].CheckResults != null)
+            if (inspection.InspectionPUDResults.Count != 0)
             {
-                foreach (var result in inspection.CriteriaList[0].CheckResults)
+                foreach (var result in inspection.InspectionPUDResults)
                 {
                     if (result.Iteration == model.CurrentIteration)
                     {
@@ -691,7 +692,8 @@ namespace PUDInspection.Controllers
                                                          .Include(i => i.PUDAllocationList)
                                                          .Include(i => i.CriteriaList)
                                                          .ToListAsync();
-                var all_users = await context.Users.Include(i => i.CheckResults).ToListAsync();
+                var all_users = await context.Users.Include(i => i.CheckPUDResults).ToListAsync();
+                var all_pudResults = await context.InspectionPUDResults.Include(i => i.CheckResults).ToListAsync();
                 var all_results = await context.CheckResults.Include(i => i.InspectionCriteria).ToListAsync();
                 var all_crit = await context.CheckVsCriterias.Include(i => i.Check).ToListAsync();
 
@@ -718,34 +720,35 @@ namespace PUDInspection.Controllers
 
                 foreach (var user in inspection.UserList)
                 {
-                    if (user.CheckResults == null)
+                    if (user.CheckPUDResults == null)
                     {
-                        user.CheckResults = new List<CheckResult>();
+                        user.CheckPUDResults = new List<CheckPUDResult>();
                     }
-                    // Создаем список тех ПУД, которые были проверены данным проверяющим в прошлую итерацию (при этом в списке должно быть столько дубликатов каждого ПУДа, сколько было критерив проверки)
-                    var previousIterationsChechedPUDs = from result in user.CheckResults where result.InspectionCriteria.Check.Id == inspection.Id && result.Iteration < inspection.CurrentIteration select result.PUD;
+                    // Создаем список тех ПУД, которые были проверены данным проверяющим в прошлую итерацию 
+                    var previousIterationsChechedPUDs = from result in user.CheckPUDResults where result is InspectionPUDResult
+                                                                                                  && (result as InspectionPUDResult).Inspection.Id == inspection.Id
+                                                                                                  && result.Iteration < inspection.CurrentIteration select result.PUD;
 
                     if (previousIterationsChechedPUDs == null)
                     {
                         previousIterationsChechedPUDs = new List<PUD>();
                     }
 
-                    // Создаем список проверенных в данную итерацию проверяющим ПУДов (при этом в списке должно быть столько дубликатов каждого ПУДа, сколько было критерив проверки)
-                    var userCheckResultPUDs = from result in user.CheckResults where result.InspectionCriteria.Check.Id == inspection.Id && result.Iteration == inspection.CurrentIteration select result.PUD;
+                    // Создаем список проверенных в данную итерацию проверяющим ПУДов 
+                    var userCheckedPUDs = from result in user.CheckPUDResults where result is InspectionPUDResult
+                                                                                        && (result as InspectionPUDResult).Inspection.Id == inspection.Id
+                                                                                        && result.Iteration == inspection.CurrentIteration select result.PUD;
 
-                    if (userCheckResultPUDs == null)
+                    if (userCheckedPUDs == null)
                     {
-                        userCheckResultPUDs = new List<PUD>();
+                        userCheckedPUDs = new List<PUD>();
                     }
 
-                    double userCheckResultPUDsCount = (double)userCheckResultPUDs.Count();
-                    double criteriaListCount = (double)(inspection.CriteriaList != null ? inspection.CriteriaList.Count : 0);
-
                     // Считаем реальное число проверенных ПУД
-                    int countCheckedPUD = criteriaListCount != 0 ? (int)Math.Round((userCheckResultPUDsCount / criteriaListCount) - 0.5) : 0;
+                    int countCheckedPUD = userCheckedPUDs.Count(); 
 
-                    // Проверенные ПУД сохраняем в список проверенных, удаляем из списка нераспределенных и добавляем их в распределение
-                    foreach (PUD pud in userCheckResultPUDs)
+                    // Проверенные ПУД сохраняем в список проверенных, удаляем из списка нераспределенных и добавляем их в распределение как уже проверенные пользователями
+                    foreach (PUD pud in userCheckedPUDs)
                     {
                         if (!checkedPUDs.Contains(pud))
                         {

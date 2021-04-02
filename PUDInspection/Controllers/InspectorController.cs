@@ -111,6 +111,7 @@ namespace PUDInspection.Controllers
                     InspectPUDViewModel viewModel = new InspectPUDViewModel()
                     {
                         UserId = user.Id,
+                        InspectionId = allocation.Inspection.Id,
                         CurrentIteration = allocation.Inspection.CurrentIteration,
                         PUDId = allocation.PUD.Id,
                         Link = allocation.PUD.Link,
@@ -148,9 +149,19 @@ namespace PUDInspection.Controllers
             var all_user = await _context.Users.ToListAsync();
             var user = all_user.Find(i => i.Id == user_helper.Id);
 
+            var inspection = await _context.Inspections.FirstOrDefaultAsync(m => m.Id == model[0].InspectionId);
             var pud = await _context.PUDs.FirstOrDefaultAsync(m => m.Id == model[0].PUDId);
             var allocation = await _context.PUDAllocations.FirstOrDefaultAsync(m => m.Id == model[0].AllocationId);
             var all_crit = await _context.CheckVsCriterias.ToListAsync();
+
+            InspectionPUDResult inspectionResult = new InspectionPUDResult()
+            {
+                Iteration = model[0].CurrentIteration,
+                PUD = pud,
+                User = user,
+                Inspection = inspection,
+                CheckResults = new List<CheckResult>()
+            };
 
             foreach (var modelCriteria in model[0].Criterias)
             {
@@ -158,17 +169,16 @@ namespace PUDInspection.Controllers
                 CheckResult result = new CheckResult()
                 {
                     Evaluation = modelCriteria.CheckResult,
-                    InspectionCriteria = criteria,
-                    Iteration = model[0].CurrentIteration,
-                    PUD = pud,
-                    User = user
+                    InspectionCriteria = criteria
                 };
 
-                _context.Add(result);
+                inspectionResult.CheckResults.Add(result);
             }
 
             allocation.Checked = true;
             _context.Update(allocation);
+
+            _context.Add(inspectionResult);
 
             await _context.SaveChangesAsync();
             return RedirectToAction("InspectPUD");
