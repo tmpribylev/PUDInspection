@@ -563,7 +563,7 @@ namespace PUDInspection.Controllers
                 return NotFound();
             }
 
-            inspection.Started = true;
+            inspection.Opened = true;
             _context.Update(inspection);
 
             await _context.SaveChangesAsync();
@@ -586,7 +586,7 @@ namespace PUDInspection.Controllers
                 return NotFound();
             }
 
-            inspection.Started = false;
+            inspection.Opened = false;
             _context.Update(inspection);
 
             await _context.SaveChangesAsync();
@@ -641,7 +641,7 @@ namespace PUDInspection.Controllers
 
                 if (insp.CurrentIteration > 0)
                 {
-                    insp.Started = true;
+                    insp.Opened = true;
                 }
 
                 insp.CurrentIteration++;
@@ -651,11 +651,11 @@ namespace PUDInspection.Controllers
             {
                 if (insp.CurrentIteration == 0)
                 {
-                    insp.Started = false;
+                    insp.Opened = false;
                 }
                 else
                 {
-                    insp.Started = true;
+                    insp.Opened = true;
                 }
                     context.Update(insp);
             }

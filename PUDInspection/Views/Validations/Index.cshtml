@@ -32,11 +32,11 @@ else
                 }
                 else
                 {
-                    @if (item.Started && item.CurrentIteration > 0)
+                    @if (item.Opened && item.CurrentIteration > 0)
                     {
                         <a class="card-title">Активна</a>
                     }
-                    else if (item.Started && item.CurrentIteration == 0 || !item.Started && item.CurrentIteration > 0)
+                    else if (item.Opened && item.CurrentIteration == 0 || !item.Opened && item.CurrentIteration > 0)
                     {
                         <a class="card-title">Ведется распределение ПУД, скоро откроется</a>
                     }
@@ -69,7 +69,7 @@ else
                         <input type="submit" value="Закончить проверку" class="btn btn-primary" />
                     </form>
                 }
-                else if (!item.Started && item.CurrentIteration == 0)
+                else if (!item.Opened && item.CurrentIteration == 0)
                 {
                     <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-primary">Удалить</a>
                     <form asp-action="Open" asp-route-id="@item.Id" asp-route-spaceId="@item.Inspection.Id">
@@ -77,7 +77,7 @@ else
                         <input type="submit" value="Запустить проверку" class="btn btn-primary" />
                     </form>
                 }
-                @if (item.Started && !item.Closed && !(item.CurrentIteration == item.IterationNumber || item.CurrentIteration == 0))
+                @if (item.Opened && !item.Closed && !(item.CurrentIteration == item.IterationNumber || item.CurrentIteration == 0))
                 {
                     <form asp-action="Iteration" asp-route-id="@item.Id" asp-route-spaceId="@item.Inspection.Id">
                         <input type="hidden" asp-for="@item.Id" />

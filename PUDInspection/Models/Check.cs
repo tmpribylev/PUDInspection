@@ -16,7 +16,7 @@ namespace PUDInspection.Models
         public int IterationNumber { get; set; }
         public int CurrentIteration { get; set; }
         public bool Hunt { get; set; }
-        public bool Started { get; set; }
+        public bool Opened { get; set; }
         public bool Closed { get; set; }
         public List<CheckVsCriteria> CriteriaList { get; set; }
         public List<PUD> PUDList { get; set; }

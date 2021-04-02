@@ -56,7 +56,7 @@ namespace PUDInspection.Controllers
                         IterationNumber = validation.IterationNumber,
                         CurrentIteration = validation.CurrentIteration,
                         Hunt = validation.Hunt,
-                        Opened = validation.Started
+                        Opened = validation.Opened
                     };
 
                     model.Add(viewModel);
