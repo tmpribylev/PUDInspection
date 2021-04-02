@@ -1,0 +1,61 @@
+﻿@model IEnumerable<PUDInspection.ViewModels.ValidatorListViewModel>
+
+@{
+    ViewData["Title"] = "Список перепроверок";
+    string user_id = TempData["userId"].ToString();
+}
+<h1>Список Ваших перепроверок</h1>
+
+@if (Model.Any())
+{
+    @foreach (var item in Model)
+    {
+<div class="card mb-3">
+    <div class="card-header">
+        Название : @item.ValidationName
+    </div>
+    <div class="card-body">
+            @if (item.Opened && item.CurrentIteration > 0)
+            {
+                <a class="card-title">Активна</a>
+            }
+            else if (item.Opened && item.CurrentIteration == 0 || !item.Opened && item.CurrentIteration > 0)
+            {
+                <a class="card-title">Ведется распределение ПУД, скоро откроется</a>
+            }
+            else
+            {
+                <a class="card-title">Ожидает начала</a>
+            }
+    </div>
+    <div class="card-body">
+        <a class="card-title">Даты проведения: @item.StartDate - @item.EndDate</a>
+    </div>
+    <div class="card-body">
+        <a class="card-title">Этап: @item.CurrentIteration / @item.IterationNumber</a>
+    </div>
+    @if (item.Hunt)
+    {
+        <div class="card-body">
+            <a class="card-title">Объявлена охота</a>
+        </div>
+    }
+    <div class="card-footer">
+        <a asp-action="Details" asp-route-id="@item.ValidationId" class="btn btn-primary">Обзор</a>
+    </div>
+</div>
+    }
+}
+else
+{
+    <div class="card">
+        <div class="card-header">
+            Вы не прикреплены ни к одной проверке
+        </div>
+        <div class="card-body">
+            <h5 class="card-title">
+                На данный момент у Вас нет ни одной активной перепроверки. Если так быть не должно - обратитесь к руководителям проверки.
+            </h5>
+        </div>
+    </div>
+}

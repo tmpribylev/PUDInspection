@@ -29,6 +29,8 @@ namespace PUDInspection.Controllers
                 return RedirectToAction("Index", "InspectionSpaces");
             if (User.IsInRole("inspector"))
                 return RedirectToAction("Index", "Inspector");
+            if (User.IsInRole("validator"))
+                return RedirectToAction("Index", "Validator");
 
             return RedirectToAction("Privacy");
         }
