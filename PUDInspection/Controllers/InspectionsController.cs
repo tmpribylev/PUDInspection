@@ -602,12 +602,17 @@ namespace PUDInspection.Controllers
         [HttpPost]
         public async Task<IActionResult> Close(int id, int spaceId)
         {
-            var inspection = await _context.Inspections
-                .FirstOrDefaultAsync(m => m.Id == id);
+            var all_insp = await _context.Inspections.Include(i => i.PUDAllocationList).ToListAsync();
+            var inspection = all_insp.Find(i => i.Id == id);
 
             if (inspection == null)
             {
                 return NotFound();
+            }
+
+            foreach (var allocation in inspection.PUDAllocationList)
+            {
+                _context.Remove(allocation);
             }
 
             inspection.Closed = true;

@@ -86,8 +86,6 @@ namespace PUDInspection.Controllers
             var all_user = await _context.Users.Include(i => i.PUDAllocations).ToListAsync();
             var user = all_user.Find(i => i.Id == user_helper.Id);
 
-            List<Inspection> inspections = new List<Inspection>();
-
             if (user.PUDAllocations == null)
             {
                 user.PUDAllocations = new List<PUDAllocation>();
@@ -98,8 +96,6 @@ namespace PUDInspection.Controllers
                 var all_insp = await _context.Inspections.Include(i => i.CriteriaList).ToListAsync();
                 var all_pud = await _context.PUDs.Include(i => i.EduProgram).Include(i => i.Department).ToListAsync();
                 var all_crit = await _context.CheckVsCriterias.Include(i => i.Criteria).ToListAsync();
-
-                await _context.SaveChangesAsync();
             }
 
             List<InspectPUDViewModel> model = new List<InspectPUDViewModel>();
