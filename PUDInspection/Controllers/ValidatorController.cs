@@ -118,7 +118,7 @@ namespace PUDInspection.Controllers
                 var all_crit = await _context.CheckVsCriterias.Include(i => i.Criteria).ToListAsync();
             }
 
-            ValidatePUDViewModel viewModel = null;
+            ValidatePUDViewModel viewModel = new ValidatePUDViewModel(); ;
 
             foreach (var allocation in user.PUDAllocations)
             {
@@ -127,8 +127,8 @@ namespace PUDInspection.Controllers
                     viewModel = new ValidatePUDViewModel()
                     {
                         UserId = user.Id,
-                        ValidationID = allocation.Inspection.Id,
-                        CurrentIteration = allocation.Inspection.CurrentIteration,
+                        ValidationID = allocation.Validation.Id,
+                        CurrentIteration = allocation.Validation.CurrentIteration,
                         PUDId = allocation.PUD.Id,
                         Link = allocation.PUD.Link,
                         EduProgram = allocation.PUD.EduProgram.Name,
@@ -142,7 +142,7 @@ namespace PUDInspection.Controllers
                         InspectionResults = new List<EvaluateInspectionPUDResultsViewModel>()
                     };
 
-                    foreach (var criteria in allocation.Inspection.CriteriaList)
+                    foreach (var criteria in allocation.Validation.CriteriaList)
                     {
                         ValidatePUDCriteriaViewModel criteriaViewModel = new ValidatePUDCriteriaViewModel()
                         {
@@ -181,19 +181,28 @@ namespace PUDInspection.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> ValidatePUD(List<ValidatePUDViewModel> model)
+        public async Task<IActionResult> ValidatePUD(ValidatePUDViewModel model)
         {
-            var user = await _context.Users.FirstOrDefaultAsync(i => i.Id == model[0].UserId);
+            var user = await _context.Users.FirstOrDefaultAsync(i => i.Id == model.UserId);
 
-            var validation = await _context.Validations.FirstOrDefaultAsync(m => m.Id == model[0].ValidationID);
-            var pud = await _context.PUDs.FirstOrDefaultAsync(m => m.Id == model[0].PUDId);
-            var allocation = await _context.PUDAllocations.FirstOrDefaultAsync(m => m.Id == model[0].AllocationId);
+            var validation = await _context.Validations.FirstOrDefaultAsync(m => m.Id == model.ValidationID);
+            var pud = await _context.PUDs.FirstOrDefaultAsync(m => m.Id == model.PUDId);
+            var allocation = await _context.PUDAllocations.FirstOrDefaultAsync(m => m.Id == model.AllocationId);
             var all_inspectionResults = await _context.InspectionPUDResults.Include(i => i.CheckResultEvaluations).ToListAsync();
             var all_crit = await _context.CheckVsCriterias.ToListAsync();
 
+            if (model.Criterias == null)
+            {
+                model.Criterias = new List<ValidatePUDCriteriaViewModel>();
+            }
+            if (model.InspectionResults == null)
+            {
+                model.InspectionResults = new List<EvaluateInspectionPUDResultsViewModel>();
+            }
+
             ValidationPUDResult validationPUDResult = new ValidationPUDResult()
             {
-                Iteration = model[0].CurrentIteration,
+                Iteration = model.CurrentIteration,
                 PUD = pud,
                 User = user,
                 Validation = validation,
@@ -201,7 +210,7 @@ namespace PUDInspection.Controllers
                 InspectionPUDResults = new List<InspectionPUDResult>()
             };
 
-            foreach (var modelCriteria in model[0].Criterias)
+            foreach (var modelCriteria in model.Criterias)
             {
                 var criteria = all_crit.Find(i => i.Id == modelCriteria.CheckVsCriteriaId);
                 CheckResult result = new CheckResult()
@@ -213,7 +222,7 @@ namespace PUDInspection.Controllers
                 validationPUDResult.CheckResults.Add(result);
             }
 
-            foreach (var result in model[0].InspectionResults)
+            foreach (var result in model.InspectionResults)
             {
                 CheckResultEvaluation eval = new CheckResultEvaluation()
                 {

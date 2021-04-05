@@ -2,11 +2,13 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using FluentScheduler;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using PUDInspection.Data;
 using PUDInspection.Models;
 using PUDInspection.ViewModels;
@@ -92,14 +94,17 @@ namespace PUDInspection.Controllers
         {
             if (ModelState.IsValid)
             {
+                var all_insp = await _context.Inspections.Include(i => i.PUDList).ToListAsync();
+                var inspection = all_insp.Find(i => i.Id == model.InspId);
+
                 Validation validation = new Validation()
                 {
                     Name = model.ValidationName,
                     StartDate = model.StartDate,
                     EndDate = model.EndDate,
                     IterationNumber = model.IterationNumber,
-                    Inspection = await _context.Inspections
-                    .FirstOrDefaultAsync(m => m.Id == model.InspId)
+                    Inspection = inspection,
+                    PUDList = inspection.PUDList
                 };
 
                 _context.Add(validation);
@@ -480,6 +485,255 @@ namespace PUDInspection.Controllers
         public ActionResult GoToInspection(int? id)
         {
             return RedirectToAction("Details", "Inspection", new { id = id });
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Open(int id, int inspId)
+        {
+            var validation = await _context.Validations
+                .FirstOrDefaultAsync(m => m.Id == id);
+
+            if (validation == null)
+            {
+                return NotFound();
+            }
+
+            var registry = new Registry();
+            registry.Schedule(() => NextIteration(id)).ToRunNow();
+            JobManager.Initialize(registry);
+
+            return RedirectToAction("Index", new { id = inspId });
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Iteration(int id, int inspId)
+        {
+            var validation = await _context.Validations
+                .FirstOrDefaultAsync(m => m.Id == id);
+
+            if (validation == null)
+            {
+                return NotFound();
+            }
+
+            validation.Opened = false;
+            _context.Update(validation);
+
+            await _context.SaveChangesAsync();
+
+            var registry = new Registry();
+            registry.Schedule(() => NextIteration(id)).ToRunNow();
+            JobManager.Initialize(registry);
+
+            return RedirectToAction("Index", new { id = inspId });
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Close(int id, int inspId)
+        {
+            var all_valid = await _context.Validations.Include(i => i.PUDAllocationList).ToListAsync();
+            var validation = all_valid.Find(i => i.Id == id);
+
+            if (validation == null)
+            {
+                return NotFound();
+            }
+
+            foreach (var allocation in validation.PUDAllocationList)
+            {
+                _context.Remove(allocation);
+            }
+
+            validation.Closed = true;
+            _context.Update(validation);
+
+            await _context.SaveChangesAsync();
+
+            return RedirectToAction("Index", new { id = inspId });
+        }
+
+        private async void NextIteration(int validId)
+        {
+            string projectPath = AppDomain.CurrentDomain.BaseDirectory.Split(new String[] { @"bin\" }, StringSplitOptions.None)[0];
+            IConfigurationRoot configuration = new ConfigurationBuilder()
+                .SetBasePath(projectPath)
+                .AddJsonFile("appsettings.json")
+                .Build();
+            string connectionString = configuration.GetConnectionString("DefaultConnection");
+
+            var contextOptions = new DbContextOptionsBuilder<ApplicationDbContext>()
+                                                            .UseSqlServer(connectionString)
+                                                            .Options;
+
+            ApplicationDbContext context = new ApplicationDbContext(contextOptions);
+
+            var valid = await context.Validations
+                .FirstOrDefaultAsync(m => m.Id == validId);
+
+            try
+            {
+                valid.CurrentIteration++;
+                context.Update(valid);
+                await context.SaveChangesAsync();
+
+                await AllocatePUDsPerValidators(validId);
+
+                valid.Opened = true;
+                context.Update(valid);
+            }
+            catch
+            {
+                if (valid.CurrentIteration == 0)
+                {
+                    valid.Opened = false;
+                }
+                else
+                {
+                    valid.Opened = true;
+                }
+
+                valid.CurrentIteration--;
+                context.Update(valid);
+            }
+
+            await context.SaveChangesAsync();
+        }
+
+        private async Task<string> AllocatePUDsPerValidators(int validId)
+        {
+            string projectPath = AppDomain.CurrentDomain.BaseDirectory.Split(new String[] { @"bin\" }, StringSplitOptions.None)[0];
+            IConfigurationRoot configuration = new ConfigurationBuilder()
+                .SetBasePath(projectPath)
+                .AddJsonFile("appsettings.json")
+                .Build();
+            string connectionString = configuration.GetConnectionString("DefaultConnection");
+
+            var contextOptions = new DbContextOptionsBuilder<ApplicationDbContext>()
+                                                            .UseSqlServer(connectionString)
+                                                            .Options;
+
+            ApplicationDbContext context = new ApplicationDbContext(contextOptions);
+            context.Database.SetCommandTimeout(100000);
+
+            var validations = await context.Validations.Include(i => i.PUDList)
+                                                      .ToListAsync();
+            var valid = validations.Find(i => i.Id == validId);
+
+            if (valid.PUDList.Count != 0)
+            {
+                Validation validation = null;
+                // Выбираем нужную проверку
+                var all_valid = await context.Validations.Include(i => i.UserList)
+                                                         .Include(i => i.PUDAllocationList)
+                                                         .Include(i => i.CriteriaList)
+                                                         .ToListAsync();
+                var all_users = await context.Users.Include(i => i.InspectionPUDResults).ToListAsync();
+                var all_pudResults = await context.InspectionPUDResults.Include(i => i.CheckResults).Include(i => i.Inspection).ToListAsync();
+                var all_results = await context.CheckResults.Include(i => i.InspectionCriteria).ToListAsync();
+                var all_crit = await context.CheckVsCriterias.Include(i => i.Check).ToListAsync();
+
+                validation = all_valid.Find(i => i.Id == validId);
+                validation.PUDList = valid.PUDList;
+
+                // Создаем список для сохранения проверенных ПУД
+                List<PUD> checkedPUDs = new List<PUD>();
+
+                // Создаем список для еще нераспределенных ПУД
+                List<PUD> unallocatePUDs = new List<PUD>();
+                unallocatePUDs.AddRange(validation.PUDList);
+
+                // Создаем список для нового распределения ПУД
+                List<PUDAllocation> newAllocations = new List<PUDAllocation>();
+
+                // Считаем, сколько ПУД на человека должно прийтись
+                double pudsPerInspector = (double)validation.PUDList.Count / (double)validation.UserList.Count;
+
+                // Число обработанных пользователей
+                int userCount = 0;
+
+                Random rand = new Random();
+
+                foreach (var user in validation.UserList)
+                {
+                    if (user.InspectionPUDResults == null)
+                    {
+                        user.InspectionPUDResults = new List<InspectionPUDResult>();
+                    }
+                    // Создаем список тех ПУД, которые были проверены данным проверяющим в прошлую итерацию 
+                    var previousIterationsChechedPUDs = from result in user.InspectionPUDResults
+                                                        where result.Inspection.Id == validation.Id
+                                                         && result.Iteration < validation.CurrentIteration
+                                                        select result.PUD;
+
+                    if (previousIterationsChechedPUDs == null)
+                    {
+                        previousIterationsChechedPUDs = new List<PUD>();
+                    }
+
+                    // Создаем список проверенных в данную итерацию проверяющим ПУДов 
+                    var userCheckedPUDs = from result in user.InspectionPUDResults
+                                          where result.Inspection.Id == validation.Id
+                                               && result.Iteration == validation.CurrentIteration
+                                          select result.PUD;
+
+                    if (userCheckedPUDs == null)
+                    {
+                        userCheckedPUDs = new List<PUD>();
+                    }
+
+                    // Считаем реальное число проверенных ПУД
+                    int countCheckedPUD = userCheckedPUDs.Count();
+
+                    // Проверенные ПУД сохраняем в список проверенных, удаляем из списка нераспределенных и добавляем их в распределение как уже проверенные пользователями
+                    foreach (PUD pud in userCheckedPUDs)
+                    {
+                        if (!checkedPUDs.Contains(pud))
+                        {
+                            checkedPUDs.Add(pud);
+                            unallocatePUDs.Remove(pud);
+                            newAllocations.Add(new PUDAllocation { Validation = validation, User = user, Checked = true, Iteration = validation.CurrentIteration, PUD = pud });
+                        }
+                    }
+
+                    // распределяем ПУДы
+                    for (int i = 0; i < (int)((userCount + 1) * pudsPerInspector - userCount * pudsPerInspector) - countCheckedPUD; i++)
+                    {
+                        // Выбираем случайный индекс нераспределенного ПУДы
+                        int itemIndex = rand.Next(0, unallocatePUDs.Count);
+
+                        // Проверяем, что данный ПУД не был проверен пользователем на прошлых итерациях
+                        if (!previousIterationsChechedPUDs.Contains(unallocatePUDs[itemIndex]))
+                        {
+                            // Добавляем ПУД в распределение
+                            newAllocations.Add(new PUDAllocation { Validation = validation, User = user, Checked = false, Iteration = validation.CurrentIteration, PUD = unallocatePUDs[itemIndex] });
+                        }
+                        else
+                        {
+                            // Возвращаем цикл на шаг назад
+                            i--;
+                        }
+                    }
+
+                    userCount++;
+                }
+
+                // Удаляем старое распределение, сохраняем новое и обновляем контекст
+                foreach (PUDAllocation allocation in validation.PUDAllocationList)
+                {
+                    if (allocation.Iteration == validation.CurrentIteration)
+                    {
+                        context.Remove(allocation);
+                    }
+                }
+                foreach (PUDAllocation allocation in newAllocations)
+                {
+                    context.Add(allocation);
+                }
+
+                await context.SaveChangesAsync();
+            }
+
+            return "";
         }
     }
 }
