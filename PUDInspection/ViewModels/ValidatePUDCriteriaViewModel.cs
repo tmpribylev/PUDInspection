@@ -1,13 +1,12 @@
 ﻿using PUDInspection.Models;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Threading.Tasks;
 
 namespace PUDInspection.ViewModels
 {
-    public class InspectPUDCriteriaViewModel
+    public class ValidatePUDCriteriaViewModel
     {
         public int CheckVsCriteriaId { get; set; }
         public Criteria Criteria { get; set; }

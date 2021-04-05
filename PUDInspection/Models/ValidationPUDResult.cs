@@ -9,5 +9,8 @@ namespace PUDInspection.Models
     {
         public List<InspectionPUDResult> InspectionPUDResults { get; set; }
         public Validation Validation { get; set; }
+        public List<CheckResult> CheckResults { get; set; }
+        public ApplicationUser User { get; set; }
+        public PUD PUD { get; set; }
     }
 }

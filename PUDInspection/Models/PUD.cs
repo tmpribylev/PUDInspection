@@ -1,8 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace PUDInspection.Models
 {
@@ -26,6 +23,7 @@ namespace PUDInspection.Models
         public string CourseName { get; set; }
         public List<Check> Checks { get; set; }
         public string Details { get; set; }
-        public List<CheckResult> CheckResultList { get; set; }
+        public List<InspectionPUDResult> InspectionPUDResults { get; set; }
+        public List<ValidationPUDResult> ValidationPUDResults { get; set; }
     }
 }

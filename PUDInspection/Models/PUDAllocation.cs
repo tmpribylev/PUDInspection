@@ -11,6 +11,7 @@ namespace PUDInspection.Models
         public int Iteration { get; set; }
         public bool Checked { get; set; }
         public Inspection Inspection { get; set; }
+        public Validation Validation { get; set; }
         public ApplicationUser User { get; set; }
         public PUD PUD { get; set; }
     }

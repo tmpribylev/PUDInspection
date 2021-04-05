@@ -86,7 +86,21 @@ namespace PUDInspection.Controllers
             var all_user = await _context.Users.Include(i => i.PUDAllocations).ToListAsync();
             var user = all_user.Find(i => i.Id == user_helper.Id);
 
-            if (user.PUDAllocations == null)
+            bool uncheckPUDExist = false;
+
+            if (user.PUDAllocations != null)
+            {
+                foreach (var alloc in user.PUDAllocations)
+                {
+                    if (!alloc.Checked)
+                    {
+                        uncheckPUDExist = true;
+                        break;
+                    }
+                }
+            }
+
+            if (user.PUDAllocations == null || user.PUDAllocations.Count == 0 || !uncheckPUDExist)
             {
                 user.PUDAllocations = new List<PUDAllocation>();
             }
@@ -102,7 +116,7 @@ namespace PUDInspection.Controllers
 
             foreach (var allocation in user.PUDAllocations)
             {
-                if (!allocation.Checked)
+                if (!allocation.Checked && allocation.Inspection != null && !allocation.Inspection.Closed && allocation.Inspection.CurrentIteration == allocation.Iteration && allocation.Inspection.Opened) 
                 {
                     InspectPUDViewModel viewModel = new InspectPUDViewModel()
                     {

@@ -9,7 +9,7 @@ namespace PUDInspection.Models
     {
         public int Id { get; set; }
         public int Evaluation { get; set; }
-        public ApplicationUser User { get; set; }
+        public ApplicationUser Validator { get; set; }
         public Validation Validation { get; set; }
     }
 }

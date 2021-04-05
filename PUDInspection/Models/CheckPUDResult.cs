@@ -10,9 +10,6 @@ namespace PUDInspection.Models
     {
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public string Id { get; set; }
-        public List<CheckResult> CheckResults { get; set; }
-        public ApplicationUser User { get; set; }
-        public PUD PUD { get; set; }
         public int Iteration { get; set; }
     }
 }

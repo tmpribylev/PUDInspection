@@ -3,15 +3,17 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using PUDInspection.Data;
 
-namespace PUDInspection.Migrations
+namespace PUDInspection.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20210403103607_Update_PUDCheckPUDResults")]
+    partial class Update_PUDCheckPUDResults
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -345,6 +347,36 @@ namespace PUDInspection.Migrations
                     b.HasDiscriminator<string>("Discriminator").HasValue("Check");
                 });
 
+            modelBuilder.Entity("PUDInspection.Models.CheckPUDResult", b =>
+                {
+                    b.Property<string>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("Discriminator")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("Iteration")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("PUDId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("UserId")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PUDId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("CheckPUDResult");
+
+                    b.HasDiscriminator<string>("Discriminator").HasValue("CheckPUDResult");
+                });
+
             modelBuilder.Entity("PUDInspection.Models.CheckResult", b =>
                 {
                     b.Property<int>("Id")
@@ -352,25 +384,20 @@ namespace PUDInspection.Migrations
                         .HasColumnType("int")
                         .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
 
+                    b.Property<string>("CheckPUDResultId")
+                        .HasColumnType("nvarchar(450)");
+
                     b.Property<int>("Evaluation")
                         .HasColumnType("int");
 
                     b.Property<int?>("InspectionCriteriaId")
                         .HasColumnType("int");
 
-                    b.Property<string>("InspectionPUDResultId")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<string>("ValidationPUDResultId")
-                        .HasColumnType("nvarchar(450)");
-
                     b.HasKey("Id");
 
+                    b.HasIndex("CheckPUDResultId");
+
                     b.HasIndex("InspectionCriteriaId");
-
-                    b.HasIndex("InspectionPUDResultId");
-
-                    b.HasIndex("ValidationPUDResultId");
 
                     b.ToTable("CheckResults");
                 });
@@ -593,40 +620,6 @@ namespace PUDInspection.Migrations
                     b.ToTable("Faculties");
                 });
 
-            modelBuilder.Entity("PUDInspection.Models.InspectionPUDResult", b =>
-                {
-                    b.Property<string>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<int?>("InspectionId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("Iteration")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("PUDId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("UserId")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<string>("ValidationPUDResultId")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("InspectionId");
-
-                    b.HasIndex("PUDId");
-
-                    b.HasIndex("UserId");
-
-                    b.HasIndex("ValidationPUDResultId");
-
-                    b.ToTable("InspectionPUDResults");
-                });
-
             modelBuilder.Entity("PUDInspection.Models.InspectionSpace", b =>
                 {
                     b.Property<int>("Id")
@@ -758,35 +751,6 @@ namespace PUDInspection.Migrations
                     b.ToTable("ReportPatterns");
                 });
 
-            modelBuilder.Entity("PUDInspection.Models.ValidationPUDResult", b =>
-                {
-                    b.Property<string>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<int>("Iteration")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("PUDId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("UserId")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<int?>("ValidationId")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("PUDId");
-
-                    b.HasIndex("UserId");
-
-                    b.HasIndex("ValidationId");
-
-                    b.ToTable("ValidationPUDResults");
-                });
-
             modelBuilder.Entity("PUDInspection.Models.Inspection", b =>
                 {
                     b.HasBaseType("PUDInspection.Models.Check");
@@ -809,6 +773,35 @@ namespace PUDInspection.Migrations
                     b.HasIndex("InspectionId");
 
                     b.HasDiscriminator().HasValue("Validation");
+                });
+
+            modelBuilder.Entity("PUDInspection.Models.InspectionPUDResult", b =>
+                {
+                    b.HasBaseType("PUDInspection.Models.CheckPUDResult");
+
+                    b.Property<int?>("InspectionId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ValidationPUDResultId")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasIndex("InspectionId");
+
+                    b.HasIndex("ValidationPUDResultId");
+
+                    b.HasDiscriminator().HasValue("InspectionPUDResult");
+                });
+
+            modelBuilder.Entity("PUDInspection.Models.ValidationPUDResult", b =>
+                {
+                    b.HasBaseType("PUDInspection.Models.CheckPUDResult");
+
+                    b.Property<int?>("ValidationId")
+                        .HasColumnType("int");
+
+                    b.HasIndex("ValidationId");
+
+                    b.HasDiscriminator().HasValue("ValidationPUDResult");
                 });
 
             modelBuilder.Entity("ApplicationUserInspection", b =>
@@ -922,19 +915,30 @@ namespace PUDInspection.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("PUDInspection.Models.CheckPUDResult", b =>
+                {
+                    b.HasOne("PUDInspection.Models.PUD", "PUD")
+                        .WithMany("CheckPUDResults")
+                        .HasForeignKey("PUDId");
+
+                    b.HasOne("PUDInspection.Models.ApplicationUser", "User")
+                        .WithMany("CheckPUDResults")
+                        .HasForeignKey("UserId");
+
+                    b.Navigation("PUD");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("PUDInspection.Models.CheckResult", b =>
                 {
+                    b.HasOne("PUDInspection.Models.CheckPUDResult", null)
+                        .WithMany("CheckResults")
+                        .HasForeignKey("CheckPUDResultId");
+
                     b.HasOne("PUDInspection.Models.CheckVsCriteria", "InspectionCriteria")
                         .WithMany("CheckResults")
                         .HasForeignKey("InspectionCriteriaId");
-
-                    b.HasOne("PUDInspection.Models.InspectionPUDResult", null)
-                        .WithMany("CheckResults")
-                        .HasForeignKey("InspectionPUDResultId");
-
-                    b.HasOne("PUDInspection.Models.ValidationPUDResult", null)
-                        .WithMany("CheckResults")
-                        .HasForeignKey("ValidationPUDResultId");
 
                     b.Navigation("InspectionCriteria");
                 });
@@ -1015,31 +1019,6 @@ namespace PUDInspection.Migrations
                     b.Navigation("Campus");
                 });
 
-            modelBuilder.Entity("PUDInspection.Models.InspectionPUDResult", b =>
-                {
-                    b.HasOne("PUDInspection.Models.Inspection", "Inspection")
-                        .WithMany("InspectionPUDResults")
-                        .HasForeignKey("InspectionId");
-
-                    b.HasOne("PUDInspection.Models.PUD", "PUD")
-                        .WithMany("InspectionPUDResults")
-                        .HasForeignKey("PUDId");
-
-                    b.HasOne("PUDInspection.Models.ApplicationUser", "User")
-                        .WithMany("InspectionPUDResults")
-                        .HasForeignKey("UserId");
-
-                    b.HasOne("PUDInspection.Models.ValidationPUDResult", null)
-                        .WithMany("InspectionPUDResults")
-                        .HasForeignKey("ValidationPUDResultId");
-
-                    b.Navigation("Inspection");
-
-                    b.Navigation("PUD");
-
-                    b.Navigation("User");
-                });
-
             modelBuilder.Entity("PUDInspection.Models.PUD", b =>
                 {
                     b.HasOne("PUDInspection.Models.Department", "Department")
@@ -1091,27 +1070,6 @@ namespace PUDInspection.Migrations
                     b.Navigation("PUD");
                 });
 
-            modelBuilder.Entity("PUDInspection.Models.ValidationPUDResult", b =>
-                {
-                    b.HasOne("PUDInspection.Models.PUD", "PUD")
-                        .WithMany("ValidationPUDResults")
-                        .HasForeignKey("PUDId");
-
-                    b.HasOne("PUDInspection.Models.ApplicationUser", "User")
-                        .WithMany("ValidationPUDResults")
-                        .HasForeignKey("UserId");
-
-                    b.HasOne("PUDInspection.Models.Validation", "Validation")
-                        .WithMany("ValidationPUDResults")
-                        .HasForeignKey("ValidationId");
-
-                    b.Navigation("PUD");
-
-                    b.Navigation("User");
-
-                    b.Navigation("Validation");
-                });
-
             modelBuilder.Entity("PUDInspection.Models.Inspection", b =>
                 {
                     b.HasOne("PUDInspection.Models.InspectionSpace", "InspectionSpace")
@@ -1130,20 +1088,45 @@ namespace PUDInspection.Migrations
                     b.Navigation("Inspection");
                 });
 
+            modelBuilder.Entity("PUDInspection.Models.InspectionPUDResult", b =>
+                {
+                    b.HasOne("PUDInspection.Models.Inspection", "Inspection")
+                        .WithMany("InspectionPUDResults")
+                        .HasForeignKey("InspectionId");
+
+                    b.HasOne("PUDInspection.Models.ValidationPUDResult", null)
+                        .WithMany("InspectionPUDResults")
+                        .HasForeignKey("ValidationPUDResultId");
+
+                    b.Navigation("Inspection");
+                });
+
+            modelBuilder.Entity("PUDInspection.Models.ValidationPUDResult", b =>
+                {
+                    b.HasOne("PUDInspection.Models.Validation", "Validation")
+                        .WithMany("ValidationPUDResults")
+                        .HasForeignKey("ValidationId");
+
+                    b.Navigation("Validation");
+                });
+
             modelBuilder.Entity("PUDInspection.Models.ApplicationUser", b =>
                 {
+                    b.Navigation("CheckPUDResults");
+
                     b.Navigation("CheckResultEvaluations");
 
-                    b.Navigation("InspectionPUDResults");
-
                     b.Navigation("PUDAllocations");
-
-                    b.Navigation("ValidationPUDResults");
                 });
 
             modelBuilder.Entity("PUDInspection.Models.Check", b =>
                 {
                     b.Navigation("CriteriaList");
+                });
+
+            modelBuilder.Entity("PUDInspection.Models.CheckPUDResult", b =>
+                {
+                    b.Navigation("CheckResults");
                 });
 
             modelBuilder.Entity("PUDInspection.Models.CheckVsCriteria", b =>
@@ -1156,13 +1139,6 @@ namespace PUDInspection.Migrations
                     b.Navigation("CriteriaEmailTextList");
                 });
 
-            modelBuilder.Entity("PUDInspection.Models.InspectionPUDResult", b =>
-                {
-                    b.Navigation("CheckResultEvaluations");
-
-                    b.Navigation("CheckResults");
-                });
-
             modelBuilder.Entity("PUDInspection.Models.InspectionSpace", b =>
                 {
                     b.Navigation("InspectionList");
@@ -1170,16 +1146,7 @@ namespace PUDInspection.Migrations
 
             modelBuilder.Entity("PUDInspection.Models.PUD", b =>
                 {
-                    b.Navigation("InspectionPUDResults");
-
-                    b.Navigation("ValidationPUDResults");
-                });
-
-            modelBuilder.Entity("PUDInspection.Models.ValidationPUDResult", b =>
-                {
-                    b.Navigation("CheckResults");
-
-                    b.Navigation("InspectionPUDResults");
+                    b.Navigation("CheckPUDResults");
                 });
 
             modelBuilder.Entity("PUDInspection.Models.Inspection", b =>
@@ -1196,6 +1163,16 @@ namespace PUDInspection.Migrations
                     b.Navigation("PUDAllocationList");
 
                     b.Navigation("ValidationPUDResults");
+                });
+
+            modelBuilder.Entity("PUDInspection.Models.InspectionPUDResult", b =>
+                {
+                    b.Navigation("CheckResultEvaluations");
+                });
+
+            modelBuilder.Entity("PUDInspection.Models.ValidationPUDResult", b =>
+                {
+                    b.Navigation("InspectionPUDResults");
                 });
 #pragma warning restore 612, 618
         }

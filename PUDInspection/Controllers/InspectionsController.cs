@@ -357,9 +357,9 @@ namespace PUDInspection.Controllers
             {
                 _context.Update(inspection);
                 await _context.SaveChangesAsync();
-                var registry = new Registry();
-                registry.Schedule(() => AllocatePUDsPerInspectors(inspId)).ToRunNow();
-                JobManager.Initialize(registry);
+                //var registry = new Registry();
+                //registry.Schedule(() => AllocatePUDsPerInspectors(inspId)).ToRunNow();
+                //JobManager.Initialize(registry);
                 //await this.AllocatePUDsPerInspectors(inspId);
                 // RedirectToAction("AllocatePUDsPerInspectors", new { inspId = inspId });
                 //return RedirectToAction("AllocatePUDsPerInspectors", new { inspId = inspId });
@@ -564,11 +564,6 @@ namespace PUDInspection.Controllers
                 return NotFound();
             }
 
-            inspection.Opened = true;
-            _context.Update(inspection);
-
-            await _context.SaveChangesAsync();
-
             var registry = new Registry();
             registry.Schedule(() => NextIteration(id)).ToRunNow();
             JobManager.Initialize(registry);
@@ -643,14 +638,13 @@ namespace PUDInspection.Controllers
 
             try
             {
+                insp.CurrentIteration++;
+                context.Update(insp);
+                await context.SaveChangesAsync();
+
                 await AllocatePUDsPerInspectors(inspId);
 
-                if (insp.CurrentIteration > 0)
-                {
-                    insp.Opened = true;
-                }
-
-                insp.CurrentIteration++;
+                insp.Opened = true;
                 context.Update(insp);
             }
             catch
@@ -663,7 +657,9 @@ namespace PUDInspection.Controllers
                 {
                     insp.Opened = true;
                 }
-                    context.Update(insp);
+
+                insp.CurrentIteration--;
+                context.Update(insp);
             }
 
             await context.SaveChangesAsync();
@@ -697,8 +693,8 @@ namespace PUDInspection.Controllers
                                                          .Include(i => i.PUDAllocationList)
                                                          .Include(i => i.CriteriaList)
                                                          .ToListAsync();
-                var all_users = await context.Users.Include(i => i.CheckPUDResults).ToListAsync();
-                var all_pudResults = await context.InspectionPUDResults.Include(i => i.CheckResults).ToListAsync();
+                var all_users = await context.Users.Include(i => i.InspectionPUDResults).ToListAsync();
+                var all_pudResults = await context.InspectionPUDResults.Include(i => i.CheckResults).Include(i => i.Inspection).ToListAsync();
                 var all_results = await context.CheckResults.Include(i => i.InspectionCriteria).ToListAsync();
                 var all_crit = await context.CheckVsCriterias.Include(i => i.Check).ToListAsync();
 
@@ -725,13 +721,12 @@ namespace PUDInspection.Controllers
 
                 foreach (var user in inspection.UserList)
                 {
-                    if (user.CheckPUDResults == null)
+                    if (user.InspectionPUDResults == null)
                     {
-                        user.CheckPUDResults = new List<CheckPUDResult>();
+                        user.InspectionPUDResults = new List<InspectionPUDResult>();
                     }
                     // Создаем список тех ПУД, которые были проверены данным проверяющим в прошлую итерацию 
-                    var previousIterationsChechedPUDs = from result in user.CheckPUDResults where result is InspectionPUDResult
-                                                                                                  && (result as InspectionPUDResult).Inspection.Id == inspection.Id
+                    var previousIterationsChechedPUDs = from result in user.InspectionPUDResults where result.Inspection.Id == inspection.Id
                                                                                                   && result.Iteration < inspection.CurrentIteration select result.PUD;
 
                     if (previousIterationsChechedPUDs == null)
@@ -740,8 +735,7 @@ namespace PUDInspection.Controllers
                     }
 
                     // Создаем список проверенных в данную итерацию проверяющим ПУДов 
-                    var userCheckedPUDs = from result in user.CheckPUDResults where result is InspectionPUDResult
-                                                                                        && (result as InspectionPUDResult).Inspection.Id == inspection.Id
+                    var userCheckedPUDs = from result in user.InspectionPUDResults where result.Inspection.Id == inspection.Id
                                                                                         && result.Iteration == inspection.CurrentIteration select result.PUD;
 
                     if (userCheckedPUDs == null)
@@ -759,7 +753,7 @@ namespace PUDInspection.Controllers
                         {
                             checkedPUDs.Add(pud);
                             unallocatePUDs.Remove(pud);
-                            newAllocations.Add(new PUDAllocation { Inspection = inspection, User = user, Checked = true, Iteration = inspection.CurrentIteration, PUD = pud });
+                            newAllocations.Add(new PUDAllocation { Inspection = inspection, User = user, Checked = true, Iteration = inspection.CurrentIteration, PUD = pud});
                         }
                     }
 
@@ -773,7 +767,7 @@ namespace PUDInspection.Controllers
                         if (!previousIterationsChechedPUDs.Contains(unallocatePUDs[itemIndex]))
                         {
                             // Добавляем ПУД в распределение
-                            newAllocations.Add(new PUDAllocation { Inspection = inspection, User = user, Checked = false, Iteration = inspection.CurrentIteration, PUD = unallocatePUDs[itemIndex] });
+                            newAllocations.Add(new PUDAllocation { Inspection = inspection, User = user, Checked = false, Iteration = inspection.CurrentIteration, PUD = unallocatePUDs[itemIndex]});
                         }
                         else
                         {

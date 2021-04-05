@@ -86,111 +86,154 @@ namespace PUDInspection.Controllers
             return View(validation);
         }
 
-        // GET: Validator/Create
-        public IActionResult Create()
+        public async Task<IActionResult> ValidatePUD()
         {
-            return View();
-        }
+            var user_helper = await userManager.GetUserAsync(HttpContext.User);
 
-        // POST: Validator/Create
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Id,Name,StartDate,EndDate,IterationNumber,CurrentIteration,Hunt,Started,Closed")] Validation validation)
-        {
-            if (ModelState.IsValid)
-            {
-                _context.Add(validation);
-                await _context.SaveChangesAsync();
-                return RedirectToAction(nameof(Index));
-            }
-            return View(validation);
-        }
+            var all_user = await _context.Users.Include(i => i.PUDAllocations).ToListAsync();
+            var user = all_user.Find(i => i.Id == user_helper.Id);
 
-        // GET: Validator/Edit/5
-        public async Task<IActionResult> Edit(int? id)
-        {
-            if (id == null)
-            {
-                return NotFound();
-            }
+            bool uncheckPUDExist = false;
 
-            var validation = await _context.Validations.FindAsync(id);
-            if (validation == null)
+            if (user.PUDAllocations != null)
             {
-                return NotFound();
-            }
-            return View(validation);
-        }
-
-        // POST: Validator/Edit/5
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("Id,Name,StartDate,EndDate,IterationNumber,CurrentIteration,Hunt,Started,Closed")] Validation validation)
-        {
-            if (id != validation.Id)
-            {
-                return NotFound();
-            }
-
-            if (ModelState.IsValid)
-            {
-                try
+                foreach (var alloc in user.PUDAllocations)
                 {
-                    _context.Update(validation);
-                    await _context.SaveChangesAsync();
+                    uncheckPUDExist = true;
+                    break;
                 }
-                catch (DbUpdateConcurrencyException)
+            }
+
+            if (user.PUDAllocations == null || user.PUDAllocations.Count == 0 || !uncheckPUDExist)
+            {
+                user.PUDAllocations = new List<PUDAllocation>();
+            }
+            else
+            {
+                var all_allocation = await _context.PUDAllocations.Include(i => i.PUD).Include(i => i.Validation).ToListAsync();
+                var all_valid = await _context.Validations.Include(i => i.CriteriaList).ToListAsync();
+                var all_pud = await _context.PUDs.Include(i => i.EduProgram).Include(i => i.Department).Include(i => i.InspectionPUDResults).ToListAsync();
+                var all_pudResults = await _context.InspectionPUDResults.Include(i => i.CheckResults).ToListAsync();
+                var all_critResults = await _context.CheckResults.ToListAsync();
+                var all_crit = await _context.CheckVsCriterias.Include(i => i.Criteria).ToListAsync();
+            }
+
+            ValidatePUDViewModel viewModel = null;
+
+            foreach (var allocation in user.PUDAllocations)
+            {
+                if (!allocation.Checked && allocation.Validation != null && !allocation.Validation.Closed && allocation.Validation.CurrentIteration == allocation.Iteration)
                 {
-                    if (!ValidationExists(validation.Id))
+                    viewModel = new ValidatePUDViewModel()
                     {
-                        return NotFound();
-                    }
-                    else
+                        UserId = user.Id,
+                        ValidationID = allocation.Inspection.Id,
+                        CurrentIteration = allocation.Inspection.CurrentIteration,
+                        PUDId = allocation.PUD.Id,
+                        Link = allocation.PUD.Link,
+                        EduProgram = allocation.PUD.EduProgram.Name,
+                        Department = allocation.PUD.Department.Name,
+                        EducationStage = allocation.PUD.EducationStage,
+                        Language = allocation.PUD.Language,
+                        CourseName = allocation.PUD.CourseName,
+                        Details = allocation.PUD.Details,
+                        Criterias = new List<ValidatePUDCriteriaViewModel>(),
+                        AllocationId = allocation.Id,
+                        InspectionResults = new List<EvaluateInspectionPUDResultsViewModel>()
+                    };
+
+                    foreach (var criteria in allocation.Inspection.CriteriaList)
                     {
-                        throw;
+                        ValidatePUDCriteriaViewModel criteriaViewModel = new ValidatePUDCriteriaViewModel()
+                        {
+                            CheckVsCriteriaId = criteria.Id,
+                            Criteria = criteria.Criteria
+                        };
+                        viewModel.Criterias.Add(criteriaViewModel);
                     }
+
+                    // =====================================================================================================================
+
+                    foreach (var result in allocation.PUD.InspectionPUDResults)
+                    {
+                        EvaluateInspectionPUDResultsViewModel eval = new EvaluateInspectionPUDResultsViewModel()
+                        {
+                            CheckResultEvaluations = new List<int>(),
+                            InspectionPUDResultId = result.Id,
+                            CriteriaNames = new List<string>()
+                        };
+
+                        foreach (var item in result.CheckResults)
+                        {
+                            eval.CheckResultEvaluations.Add(item.Evaluation);
+                            eval.CriteriaNames.Add(item.InspectionCriteria.Criteria.Name);
+                        }
+
+                        viewModel.InspectionResults.Add(eval);
+                    }
+
+                    break;
                 }
-                return RedirectToAction(nameof(Index));
             }
-            return View(validation);
+
+
+            return View(viewModel);
         }
 
-        // GET: Validator/Delete/5
-        public async Task<IActionResult> Delete(int? id)
+        [HttpPost]
+        public async Task<IActionResult> ValidatePUD(List<ValidatePUDViewModel> model)
         {
-            if (id == null)
+            var user = await _context.Users.FirstOrDefaultAsync(i => i.Id == model[0].UserId);
+
+            var validation = await _context.Validations.FirstOrDefaultAsync(m => m.Id == model[0].ValidationID);
+            var pud = await _context.PUDs.FirstOrDefaultAsync(m => m.Id == model[0].PUDId);
+            var allocation = await _context.PUDAllocations.FirstOrDefaultAsync(m => m.Id == model[0].AllocationId);
+            var all_inspectionResults = await _context.InspectionPUDResults.Include(i => i.CheckResultEvaluations).ToListAsync();
+            var all_crit = await _context.CheckVsCriterias.ToListAsync();
+
+            ValidationPUDResult validationPUDResult = new ValidationPUDResult()
             {
-                return NotFound();
+                Iteration = model[0].CurrentIteration,
+                PUD = pud,
+                User = user,
+                Validation = validation,
+                CheckResults = new List<CheckResult>(),
+                InspectionPUDResults = new List<InspectionPUDResult>()
+            };
+
+            foreach (var modelCriteria in model[0].Criterias)
+            {
+                var criteria = all_crit.Find(i => i.Id == modelCriteria.CheckVsCriteriaId);
+                CheckResult result = new CheckResult()
+                {
+                    Evaluation = modelCriteria.CheckResult,
+                    InspectionCriteria = criteria
+                };
+
+                validationPUDResult.CheckResults.Add(result);
             }
 
-            var validation = await _context.Validations
-                .FirstOrDefaultAsync(m => m.Id == id);
-            if (validation == null)
+            foreach (var result in model[0].InspectionResults)
             {
-                return NotFound();
+                CheckResultEvaluation eval = new CheckResultEvaluation()
+                {
+                    Evaluation = result.Evaluation,
+                    Validation = validation,
+                    Validator = user
+                };
+
+                var inspPUDRes = all_inspectionResults.Find(i => i.Id == result.InspectionPUDResultId);
+                inspPUDRes.CheckResultEvaluations.Add(eval);
+                _context.Update(inspPUDRes);
             }
 
-            return View(validation);
-        }
+            allocation.Checked = true;
+            _context.Update(allocation);
 
-        // POST: Validator/Delete/5
-        [HttpPost, ActionName("Delete")]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DeleteConfirmed(int id)
-        {
-            var validation = await _context.Validations.FindAsync(id);
-            _context.Validations.Remove(validation);
+            _context.Add(validationPUDResult);
+
             await _context.SaveChangesAsync();
-            return RedirectToAction(nameof(Index));
-        }
-
-        private bool ValidationExists(int id)
-        {
-            return _context.Validations.Any(e => e.Id == id);
+            return RedirectToAction("ValidatePUD");
         }
     }
 }

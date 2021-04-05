@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using ExcelDataReader;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using PUDInspection.Models;
 using PUDInspection.ViewModels;
 
@@ -56,6 +57,8 @@ namespace PUDInspection.Data
 
         public async Task<bool> UploadPUDToDatabase(IFormFile file)
         {
+            _context.Database.SetCommandTimeout(100000);
+
             List<PUDInfoViewModel> pudModels = this.ReadPUD(file);
             bool success = true;
 
@@ -127,14 +130,16 @@ namespace PUDInspection.Data
 
         public async Task<bool> UploadPUDToDatabase(IFormFile file, Inspection inspection)
         {
+            _context.Database.SetCommandTimeout(100000);
+
             List<PUDInfoViewModel> pudModels = this.ReadPUD(file);
             bool success = true;
 
             var all_puds = await _context.PUDs.Include(i => i.EduProgram).Include(i => i.Department).Include(i => i.Checks).ToListAsync();
             var all_eduprog = await _context.EduPrograms.Include(i => i.Faculty).ToListAsync();
-            var all_depart = await _context.Departments.ToListAsync();
+            var all_depart = await this._context.Departments.ToListAsync();
             var all_faculty = await _context.Faculties.Include(i => i.Campus).ToListAsync();
-            var all_campus = await _context.Campuses.ToListAsync();
+            var all_campus = await this._context.Campuses.ToListAsync();
 
             List<Campus> new_campuses = new List<Campus>();
             List<Faculty> new_faculties = new List<Faculty>();
@@ -157,7 +162,7 @@ namespace PUDInspection.Data
                 if (campus == null && new_campus == null)
                 {
                     campus = new Campus { Name = model.Campus };
-                    _context.Add(campus);
+                    this._context.Add(campus);
                     new_campuses.Add(campus);
                 }
                 else if (campus == null)
@@ -170,7 +175,7 @@ namespace PUDInspection.Data
                 if (falulty == null && new_faculty == null)
                 {
                     falulty = new Faculty { Name = model.Faculty, Campus = campus };
-                    _context.Add(falulty);
+                    this._context.Add(falulty);
                     new_faculties.Add(falulty);
                 }
                 else if (falulty == null)
@@ -183,7 +188,7 @@ namespace PUDInspection.Data
                 if (edu_prog == null && new_eduProg == null)
                 {
                     edu_prog = new EduProgram { Name = model.OP, Faculty = falulty };
-                    _context.Add(edu_prog);
+                    this._context.Add(edu_prog);
                     new_eduPrograms.Add(edu_prog);
                 }
                 else if (edu_prog == null)
@@ -197,7 +202,7 @@ namespace PUDInspection.Data
                 if (department == null && new_department==null)
                 {
                     department = new Department { Name = model.Department };
-                    _context.Add(department);
+                    this._context.Add(department);
                     new_departments.Add(department);
                 }
                 else if (department == null)
@@ -222,7 +227,7 @@ namespace PUDInspection.Data
                         inspection
                     };
 
-                    _context.Add(pud);
+                    this._context.Add(pud);
                 }
                 else
                 {
@@ -230,11 +235,11 @@ namespace PUDInspection.Data
                     {
                         db_pud.Checks.Add(inspection);
                     }
-                    _context.Update(db_pud);
+                    this._context.Update(db_pud);
                 }
             }
 
-            await _context.SaveChangesAsync();
+            await this._context.SaveChangesAsync();
 
             return success;
         }
