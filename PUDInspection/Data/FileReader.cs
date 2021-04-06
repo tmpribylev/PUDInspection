@@ -36,18 +36,21 @@ namespace PUDInspection.Data
                     reader.Read();
                     while (reader.Read()) //Each ROW
                     {
-                        puds.Add(new PUDInfoViewModel
+                        if (reader.GetValue(0) != null && reader.GetValue(0).ToString() != "")
                         {
-                            LinkID = reader.GetValue(0).ToString(),
-                            Campus = reader.GetValue(1).ToString(),
-                            Faculty = reader.GetValue(2).ToString(),
-                            EducationStage = reader.GetValue(3).ToString(),
-                            OP = reader.GetValue(4).ToString(),
-                            Department = reader.GetValue(5).ToString(),
-                            Language = reader.GetValue(7).ToString(),
-                            Name = reader.GetValue(6).ToString(),
-                            Details = reader.GetValue(8).ToString()
-                        });
+                            puds.Add(new PUDInfoViewModel
+                            {
+                                LinkID = reader.GetValue(0).ToString(),
+                                Campus = reader.GetValue(1).ToString(),
+                                Faculty = reader.GetValue(2).ToString(),
+                                EducationStage = reader.GetValue(3).ToString(),
+                                OP = reader.GetValue(4).ToString(),
+                                Department = reader.GetValue(5).ToString(),
+                                Language = reader.GetValue(7).ToString(),
+                                Name = reader.GetValue(6).ToString(),
+                                Details = reader.GetValue(8).ToString()
+                            });
+                        }
                     }
                 }
             }
