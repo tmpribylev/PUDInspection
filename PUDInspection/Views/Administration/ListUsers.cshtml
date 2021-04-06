@@ -32,7 +32,7 @@
                 <a class="card-title">@user.Email</a>
             </div>
             <div class="card-body">
-                <a class="card-title">@user.VKLink</a>
+                <a class="card-title" href="@user.VKLink">@user.VKLink</a>
             </div>
             <div class="card-footer">
                 <a asp-action="EditUser" asp-controller="Administration" asp-route-id="@user.Id" class="btn btn-primary">
