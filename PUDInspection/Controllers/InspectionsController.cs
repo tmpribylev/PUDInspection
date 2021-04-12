@@ -93,7 +93,8 @@ namespace PUDInspection.Controllers
                 Criterias = inspection.CriteriaList,
                 Users = new List<string>(),
                 Validations = new List<string>(),
-                CurrentCheckPUDCount = 0
+                CurrentCheckPUDCount = 0,
+                Opened = inspection.Opened
             };
 
             foreach (ApplicationUser user in inspection.UserList)

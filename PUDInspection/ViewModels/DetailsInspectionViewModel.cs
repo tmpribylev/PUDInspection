@@ -30,6 +30,8 @@ namespace PUDInspection.ViewModels
 
         public bool Closed { get; set; }
 
+        public bool Opened { get; set; }
+
         public bool Hunt { get; set; }
 
         public int PUDCount { get; set; }

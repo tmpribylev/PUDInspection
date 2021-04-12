@@ -41,16 +41,6 @@ namespace PUDInspection.Controllers
             return View();
         }
 
-        public IActionResult Inspection()
-        {
-            return View();
-        }
-
-        public IActionResult InspectionSpace()
-        {
-            return View();
-        }
-
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
         [AllowAnonymous]
         public IActionResult Error()
