@@ -17,15 +17,11 @@ namespace PUDInspection.Data
         public DbSet<ValidationPUDResult> ValidationPUDResults { get; set; }
         public DbSet<InspectionPUDResult> InspectionPUDResults { get; set; }
         public DbSet<CheckVsCriteria> CheckVsCriterias { get; set; }
-        public DbSet<Contact> Contacts { get; set; }
         public DbSet<Criteria> Criterias { get; set; }
-        public DbSet<CriteriaEmailText> CriteriaEmailTexts { get; set; }
-        public DbSet<EmailText> EmailTexts { get; set; }
         public DbSet<InspectionSpace> InspectionSpaces { get; set; }
         public DbSet<PUD> PUDs { get; set; }
         public DbSet<PUDAllocation> PUDAllocations { get; set; }
         public DbSet<PUDChange> PUDChanges { get; set; }
-        public DbSet<ReportPattern> ReportPatterns { get; set; }
         public DbSet<Campus> Campuses { get; set; }
         public DbSet<Faculty> Faculties { get; set; }
         public DbSet<EduProgram> EduPrograms { get; set; }
